@@ -4,6 +4,7 @@ from fastapi import FastAPI
 
 from app.routers.rag_router import router as rag_router
 from app.core.llm_config import APP_NAME, LOG_LEVEL
+#from app.core.settings import settings
 
 logging.basicConfig(level=getattr(logging, LOG_LEVEL.upper(), logging.INFO))
 app = FastAPI(title=APP_NAME, version="1.0.0", description="FastAPI Hybrid RAG using Chroma + BM25 + RRF")

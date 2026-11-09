@@ -22,7 +22,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
-from app.core import settings
+from app.core.settings import RRF_K,TOP_K,MAX_CONTEXT_CHARS,COLLECTION_NAME,EMBEDDING_MODEL,CHUNK_SIZE,CHUNK_OVERLAP
 from app.core.llm_config import get_llm
 
 logger = logging.getLogger(__name__)
@@ -40,11 +40,11 @@ explain that the answer is informational and not a substitute for a qualified cl
 class HybridRAGImplementation:
     def __init__(self) -> None:
         self._lock = threading.RLock()
-        self._embeddings = HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL)
+        self._embeddings = HuggingFaceEmbeddings(model_name=EMBEDDING_MODEL)
         self._vectorstore = Chroma(
-            collection_name=settings.COLLECTION_NAME,
+            collection_name=COLLECTION_NAME,
             embedding_function=self._embeddings,
-            persist_directory=str(settings.VECTOR_DB_PATH),
+            persist_directory=str(COLLECTION_NAME),
         )
         self._llm = get_llm()
         self._bm25: BM25Retriever | None = None
@@ -98,7 +98,7 @@ class HybridRAGImplementation:
             if docs else None
         )
         if self._bm25 is not None:
-            self._bm25.k = max(int(settings.TOP_K) * 5, 20)
+            self._bm25.k = max(int(TOP_K) * 5, 20)
 
     @staticmethod
     def _guess_section(text: str, current: str = "Unspecified") -> str:
@@ -145,8 +145,8 @@ class HybridRAGImplementation:
 
         docs = self._load_document(file_path)
         splitter = RecursiveCharacterTextSplitter(
-            chunk_size=settings.CHUNK_SIZE,
-            chunk_overlap=settings.CHUNK_OVERLAP,
+            chunk_size=CHUNK_SIZE,
+            chunk_overlap=CHUNK_OVERLAP,
             add_start_index=True,
             separators=["\n\n", "\n", ". ", " ", ""],
         )
@@ -198,7 +198,7 @@ class HybridRAGImplementation:
         cls,
         dense_docs: list[Document],
         lexical_docs: list[Document],
-        rrf_k: int = settings.RRF_K,
+        rrf_k: int = RRF_K,
     ) -> list[dict[str, Any]]:
         """Fuse ranked lists and keep the RRF score distinct from reranker scores."""
         ranked: dict[str, dict[str, Any]] = {}
@@ -448,7 +448,7 @@ class HybridRAGImplementation:
     def ask(
         self,
         question: str,
-        top_k: int = settings.TOP_K,
+        top_k: int = TOP_K,
         include_sources: bool = True,
     ) -> dict[str, Any]:
         started = time.perf_counter()
@@ -575,7 +575,7 @@ class HybridRAGImplementation:
                     f"{neighbor_doc.page_content}"
                 )
 
-        max_context_chars = max(1, int(settings.MAX_CONTEXT_CHARS))
+        max_context_chars = max(1, int(MAX_CONTEXT_CHARS))
         primary_context = "\\n\\n---\\n\\n".join(primary_context_parts)
         neighbor_context = "\\n\\n---\\n\\n".join(neighbor_context_parts)
         if len(primary_context) >= max_context_chars:
